@@ -33,7 +33,6 @@ Json::Value ChromeTraceBuilder::ToJsonValue() const {
   Json::Value result(Json::arrayValue);
 
   for (const auto& pid_to_info : pid_to_info_) {
-    const auto& pidtid = pid_to_info.first;
     const auto& process_info = pid_to_info.second;
 
     if (process_info.start_time_ns == 0) {
@@ -48,8 +47,12 @@ Json::Value ChromeTraceBuilder::ToJsonValue() const {
     Json::Value object(Json::objectValue);
     object["ph"] = "X";  // For complete events.
     object["name"] = process_info.name;
-    object["pid"] = pidtid.first;
-    object["tid"] = pidtid.second;
+    auto iter = command_to_id_.find(process_info.name);
+    if (iter == command_to_id_.end()) {
+      object["pid"] = -1;
+    } else {
+      object["pid"] = iter->second;
+    }
     // Times are in microseconds.
     object["ts"] =
         static_cast<Json::Value::UInt64>(process_info.start_time_ns / 1000);
@@ -76,6 +79,11 @@ void ChromeTraceBuilder::ProcessCommEvent(const PerfDataProto_CommEvent& comm) {
   // appears later, it should overwrite this value.
   if (process_info->start_time_ns == 0) {
     process_info->start_time_ns = comm.sample_info().sample_time_ns();
+  }
+
+  if (command_to_id_.find(command_name) == command_to_id_.end()) {
+    uint32_t new_id = command_to_id_.size();
+    command_to_id_[command_name] = new_id;
   }
 }
 

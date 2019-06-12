@@ -50,6 +50,9 @@ class ChromeTraceBuilder {
 
   // Stores a ProcessInfo object for each pid/tid.
   std::map<PidTid, ProcessInfo> pid_to_info_;
+
+  // Stores an ID for each command name.
+  std::map<std::string, uint32_t> command_to_id_;
 };
 
 }  // namespace quipper
