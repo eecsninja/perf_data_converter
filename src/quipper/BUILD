@@ -774,4 +774,30 @@ cc_test(
     ],
 )
 
+cc_library(
+    name = "chrome_trace_builder",
+    srcs = [
+        "chrome_trace_builder.cc",
+        "chrome_trace_builder.h",
+        ],
+    deps = [
+        ":base",
+        ":compat",
+        ":kernel",
+        ":perf_data_cc_proto",
+    ],
+    linkopts = ["-ljsoncpp"],
+)
+
+cc_binary(
+    name = "perf_to_trace",
+    srcs = ["perf_to_trace.cc"],
+    deps = [
+        ":base",
+        ":chrome_trace_builder",
+        ":perf_parser_options_cc_proto",
+        ":perf_protobuf_io",
+    ],
+)
+
 test_suite(name = "AllTests")
