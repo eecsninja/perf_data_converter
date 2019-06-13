@@ -33,9 +33,6 @@ class ChromeTraceBuilder {
     uint64_t end_time_ns = 0;
   };
 
-  // Gets existing ProcessInfo for |pidtid| or creates a new one if none exists.
-  ProcessInfo* GetOrCreateProcessInfo(const PidTid& pidtid);
-
   // For handling different events within the perf data.
   void ProcessCommEvent(const PerfDataProto_CommEvent& comm);
 
@@ -47,6 +44,12 @@ class ChromeTraceBuilder {
   }
   void ProcessForkOrExitEvent(const PerfDataProto_ForkEvent& fork,
                               bool is_exit);
+
+  // Gets existing ProcessInfo for |pidtid| or creates a new one if none exists.
+  ProcessInfo* GetOrCreateProcessInfo(const PidTid& pidtid);
+
+  // Gets the ID for a command, or -1 if not available.
+  int64_t GetCommandID(const std::string& command_name) const;
 
   // Stores a ProcessInfo object for each pid/tid.
   std::map<PidTid, ProcessInfo> pid_to_info_;

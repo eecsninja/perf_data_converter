@@ -47,17 +47,16 @@ Json::Value ChromeTraceBuilder::ToJsonValue() const {
     Json::Value object(Json::objectValue);
     object["ph"] = "X";  // For complete events.
     object["name"] = process_info.name;
-    auto iter = command_to_id_.find(process_info.name);
-    if (iter == command_to_id_.end()) {
-      object["pid"] = -1;
-    } else {
-      object["pid"] = iter->second;
-    }
     // Times are in microseconds.
     object["ts"] =
         static_cast<Json::Value::UInt64>(process_info.start_time_ns / 1000);
     object["dur"] = static_cast<Json::Value::UInt64>(
         (process_info.end_time_ns - process_info.start_time_ns) / 1000);
+
+    // Used for displaying the "process id" in the JSON graph, which may or may
+    // not be an actual PID. Each ID number has its own line.
+    Json::Value::UInt64 id = GetCommandID(process_info.name);
+    object["pid"] = id;
 
     result.append(object);
   }
@@ -109,6 +108,16 @@ ChromeTraceBuilder::ProcessInfo* ChromeTraceBuilder::GetOrCreateProcessInfo(
   auto insert_result =
       pid_to_info_.insert(std::make_pair(pidtid, ProcessInfo()));
   return &insert_result.first->second;
+}
+
+int64_t ChromeTraceBuilder::GetCommandID(const std::string& command_name)
+    const {
+  auto iter = command_to_id_.find(command_name);
+  if (iter == command_to_id_.end()) {
+    return -1;
+  } else {
+    return iter->second;
+  }
 }
 
 }  // namespace quipper
