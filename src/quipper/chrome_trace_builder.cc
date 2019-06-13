@@ -44,14 +44,15 @@ Json::Value ChromeTraceBuilder::ToJsonValue() const {
       continue;
     }
 
+    const Json::Value::UInt64 start_time_us = process_info.start_time_ns / 1000;
+    const Json::Value::UInt64 end_time_us = process_info.end_time_ns / 1000;
+
     Json::Value object(Json::objectValue);
     object["ph"] = "X";  // For complete events.
     object["name"] = process_info.name;
     // Times are in microseconds.
-    object["ts"] =
-        static_cast<Json::Value::UInt64>(process_info.start_time_ns / 1000);
-    object["dur"] = static_cast<Json::Value::UInt64>(
-        (process_info.end_time_ns - process_info.start_time_ns) / 1000);
+    object["ts"] = start_time_us;
+    object["dur"] = end_time_us - start_time_us;
 
     // Used for displaying the "process id" in the JSON graph, which may or may
     // not be an actual PID. Each ID number has its own line.
