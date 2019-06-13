@@ -93,9 +93,9 @@ void ChromeTraceBuilder::ProcessForkOrExitEvent(
   uint64_t time_ns = fork.fork_time_ns();
   auto process_info = GetOrCreateProcessInfo(pidtid);
 
-  if (!is_exit) {
+  if (!is_exit) {  // FORK event
     process_info->start_time_ns = time_ns;
-  } else {  // is_exit
+  } else {  // EXIT event
     process_info->end_time_ns = time_ns;
   }
 }
