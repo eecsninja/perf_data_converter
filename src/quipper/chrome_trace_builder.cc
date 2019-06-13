@@ -29,7 +29,7 @@ void ChromeTraceBuilder::IngestPerfData(const PerfDataProto& proto) {
   }
 }
 
-Json::Value ChromeTraceBuilder::ToJsonValue() const {
+Json::Value ChromeTraceBuilder::RenderJson(RenderMode mode) const {
   Json::Value result(Json::arrayValue);
 
   for (const auto& pid_to_info : pid_to_info_) {
@@ -56,8 +56,7 @@ Json::Value ChromeTraceBuilder::ToJsonValue() const {
 
     // Used for displaying the "process id" in the JSON graph, which may or may
     // not be an actual PID. Each ID number has its own line.
-    Json::Value::UInt64 id = GetCommandID(process_info.name);
-    object["pid"] = id;
+    object["pid"] = GetRenderID(process_info, mode);
 
     result.append(object);
   }
@@ -108,6 +107,7 @@ ChromeTraceBuilder::ProcessInfo* ChromeTraceBuilder::GetOrCreateProcessInfo(
   }
   auto insert_result =
       pid_to_info_.insert(std::make_pair(pidtid, ProcessInfo()));
+  insert_result.first->second.pidtid = pidtid;
   return &insert_result.first->second;
 }
 
@@ -119,6 +119,23 @@ int64_t ChromeTraceBuilder::GetCommandID(const std::string& command_name)
   } else {
     return iter->second;
   }
+}
+
+Json::Value::Int ChromeTraceBuilder::GetRenderID(const ProcessInfo& info,
+                                                 RenderMode mode) const {
+  switch (mode) {
+    case RenderMode::FLAME:
+      // All durations added to the same line end up getting stacked into a
+      // flame graph.
+      return 0;
+    case RenderMode::CASCADE:
+      // TODO(sque): Use TID too?
+      return info.pidtid.first;
+    case RenderMode::COMMAND:
+      // Each command has its own ID.
+      return GetCommandID(info.name);
+  }
+  return 0;
 }
 
 }  // namespace quipper

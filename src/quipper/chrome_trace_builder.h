@@ -18,9 +18,18 @@ namespace quipper {
 
 class ChromeTraceBuilder {
  public:
+  enum class RenderMode {
+    // All processes are rendered on the same line, as a flamegraph.
+    FLAME,
+    // Each process is rendered on its own line.
+    CASCADE,
+    // All processes with the same command are rendered on the same line.
+    COMMAND,
+  };
+
   void IngestPerfData(const PerfDataProto& proto);
 
-  Json::Value ToJsonValue() const;
+  Json::Value RenderJson(RenderMode mode) const;
 
  private:
   using PidTid = std::pair<uint32_t, uint32_t>;
@@ -29,6 +38,7 @@ class ChromeTraceBuilder {
   // events.
   struct ProcessInfo {
     std::string name;
+    PidTid pidtid;
     uint64_t start_time_ns = 0;
     uint64_t end_time_ns = 0;
   };
@@ -50,6 +60,9 @@ class ChromeTraceBuilder {
 
   // Gets the ID for a command, or -1 if not available.
   int64_t GetCommandID(const std::string& command_name) const;
+
+  // Gets the ID for displaying a process in Chrome trace JSON.
+  Json::Value::Int GetRenderID(const ProcessInfo& info, RenderMode mode) const;
 
   // Stores a ProcessInfo object for each pid/tid.
   std::map<PidTid, ProcessInfo> pid_to_info_;

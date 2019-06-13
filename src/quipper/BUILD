@@ -797,6 +797,7 @@ cc_binary(
         ":chrome_trace_builder",
         ":perf_parser_options_cc_proto",
         ":perf_protobuf_io",
+        "@com_github_gflags_gflags//:gflags",
     ],
 )
 
