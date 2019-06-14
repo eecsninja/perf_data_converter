@@ -31,11 +31,8 @@ bool PerfSerializer::IsSupportedKernelEventType(uint32_t type) {
   switch (type) {
     case PERF_RECORD_MMAP:
     case PERF_RECORD_LOST:
-    case PERF_RECORD_COMM:
-    case PERF_RECORD_EXIT:
     case PERF_RECORD_THROTTLE:
     case PERF_RECORD_UNTHROTTLE:
-    case PERF_RECORD_FORK:
     case PERF_RECORD_SAMPLE:
     case PERF_RECORD_MMAP2:
     case PERF_RECORD_AUX:
@@ -44,6 +41,10 @@ bool PerfSerializer::IsSupportedKernelEventType(uint32_t type) {
     case PERF_RECORD_SWITCH:
     case PERF_RECORD_SWITCH_CPU_WIDE:
     case PERF_RECORD_NAMESPACES:
+      return false;
+    case PERF_RECORD_COMM:
+    case PERF_RECORD_FORK:
+    case PERF_RECORD_EXIT:
       return true;
   }
   return false;
