@@ -4,6 +4,8 @@
 
 #include "chrome_trace_builder.h"
 
+#include <stack>
+
 #include "base/logging.h"
 #include "kernel/perf_event.h"
 
@@ -31,6 +33,9 @@ void ChromeTraceBuilder::IngestPerfData(const PerfDataProto& proto) {
 
 Json::Value ChromeTraceBuilder::RenderJson(RenderMode mode) const {
   Json::Value result(Json::arrayValue);
+
+  using ProcessCallStack = std::stack<const ProcessInfo*>;
+  std::map<int64_t, ProcessCallStack> call_stacks;
 
   for (const auto& pid_to_info : pid_to_info_) {
     const auto& process_info = pid_to_info.second;
@@ -92,10 +97,51 @@ void ChromeTraceBuilder::ProcessForkOrExitEvent(
   uint64_t time_ns = fork.fork_time_ns();
   auto process_info = GetOrCreateProcessInfo(pidtid);
 
+  auto parent_pidtid = std::make_pair(fork.ppid(), fork.ptid());
+  auto parent = is_exit ? process_info->parent
+                        : GetOrCreateProcessInfo(parent_pidtid);
   if (!is_exit) {  // FORK event
     process_info->start_time_ns = time_ns;
+    process_info->parent = parent;
+    parent->children.insert(process_info);
+
+    uint64_t row = 0;
+    bool found_row = false;
+
+    if (parent->children.size() == 1) {
+      row = parent->render_row;
+      found_row = true;
+    }
+
+    if (!found_row) {
+      // Find first row number that has an empty call stack.
+      for (auto& row_and_call_stack : row_to_call_stacks_) {
+        const auto& call_stack = row_and_call_stack.second;
+        if (call_stack.empty()) {
+          row = row_and_call_stack.first;
+          found_row = true;
+          break;
+        }
+      }
+    }
+    // Use new row.
+    if (!found_row) {
+      row = row_to_call_stacks_.size();
+    }
+    process_info->render_row = row;
+
+    row_to_call_stacks_[process_info->render_row].push(process_info);
   } else {  // EXIT event
     process_info->end_time_ns = time_ns;
+
+    if (parent) {
+      parent->children.erase(process_info);
+    }
+    auto call_stack_iter = row_to_call_stacks_.find(process_info->render_row);
+    if (call_stack_iter != row_to_call_stacks_.end() &&
+        !call_stack_iter->second.empty()) {
+      call_stack_iter->second.pop();
+    }
   }
 }
 
@@ -124,10 +170,13 @@ int64_t ChromeTraceBuilder::GetCommandID(const std::string& command_name)
 Json::Value::Int ChromeTraceBuilder::GetRenderID(const ProcessInfo& info,
                                                  RenderMode mode) const {
   switch (mode) {
-    case RenderMode::FLAME:
-      // All durations added to the same line end up getting stacked into a
+    case RenderMode::FLAT:
+      // All durations added to the same row end up getting stacked into a
       // flame graph.
       return 0;
+    case RenderMode::FLAME:
+      // Flame graph that uses multiple rows for processes running in parallel.
+      return info.render_row;
     case RenderMode::CASCADE:
       // TODO(sque): Use TID too?
       return info.pidtid.first;

@@ -13,7 +13,8 @@
 namespace {
 
 DEFINE_string(input, "", "Name of perf data file to read");
-DEFINE_string(render_mode, "flame", "Rendering mode: flame|cascade|command");
+DEFINE_string(render_mode, "flat",
+              "Rendering mode: flat|flame|cascade|command");
 
 }  // anonymous namespace
 
@@ -21,6 +22,9 @@ namespace quipper {
 
 // Converts the "--render_mode" flag arg to an enum.
 ChromeTraceBuilder::RenderMode GetRenderModeFromString(const std::string& arg) {
+  if (arg == "flat") {
+    return ChromeTraceBuilder::RenderMode::FLAT;
+  }
   if (arg == "flame") {
     return ChromeTraceBuilder::RenderMode::FLAME;
   }
@@ -30,7 +34,7 @@ ChromeTraceBuilder::RenderMode GetRenderModeFromString(const std::string& arg) {
   if (arg == "command") {
     return ChromeTraceBuilder::RenderMode::COMMAND;
   }
-  return ChromeTraceBuilder::RenderMode::FLAME;
+  return ChromeTraceBuilder::RenderMode::FLAT;
 }
 
 }  // namespace quipper
