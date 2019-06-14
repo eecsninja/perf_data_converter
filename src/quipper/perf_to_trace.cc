@@ -12,6 +12,7 @@
 
 namespace {
 
+DEFINE_string(input, "", "Name of perf data file to read");
 DEFINE_string(render_mode, "flame", "Rendering mode: flame|cascade|command");
 
 }  // anonymous namespace
@@ -35,17 +36,19 @@ ChromeTraceBuilder::RenderMode GetRenderModeFromString(const std::string& arg) {
 }  // namespace quipper
 
 int main(int argc, char** argv) {
-  if (argc < 2) {
-    LOG(ERROR) << "Must specify args: " << argv[0] << " [input perf.data]";
-    return 0;
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
+
+  if (FLAGS_input == "") {
+    LOG(ERROR) << "Must specify input file.";
+    return 1;
   }
 
   quipper::PerfParserOptions options;
   options.sort_events_by_time = true;
 
   quipper::PerfDataProto proto;
-  if (!quipper::SerializeFromFileWithOptions(argv[1], options, &proto)) {
-    LOG(ERROR) << "Could not convert perf data file " << argv[1] << " to "
+  if (!quipper::SerializeFromFileWithOptions(FLAGS_input, options, &proto)) {
+    LOG(ERROR) << "Could not convert perf data file " << FLAGS_input << " to "
                << "PerfDataProto.";
     return 1;
   }
@@ -53,7 +56,7 @@ int main(int argc, char** argv) {
   quipper::ChromeTraceBuilder builder;
   builder.IngestPerfData(proto);
 
-  auto render_mode = GetRenderModeFromString(FLAGS_render_mode)
+  auto render_mode = quipper::GetRenderModeFromString(FLAGS_render_mode);
   std::string json_string = builder.RenderJson(render_mode).toStyledString();
 
   printf("%s", json_string.c_str());
