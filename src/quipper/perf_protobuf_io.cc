@@ -60,8 +60,11 @@ bool SerializeFromFileWithOptions(const string& filename,
   PerfReader reader;
   if (!reader.ReadFile(filename)) return false;
 
+  if (options.sort_events_by_time) {
+    reader.MaybeSortEventsByTime();
+  }
+
   PerfParser parser(&reader, options);
-  if (!parser.ParseRawEvents()) return false;
 
   if (!reader.Serialize(perf_data_proto)) return false;
 
